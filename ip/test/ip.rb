@@ -198,6 +198,25 @@ class AddressTest < Test::Unit::TestCase
     end
 
     assert(false, "init test #4") if ip
+
+    ip = nil
+    begin
+      ip = IP::Address.new("255.255.255.255aaaa")
+    rescue IP::AddressException => e
+      assert(true, "init test #5")
+    end
+
+    assert(false, "init test #5") if ip
+
+    ip = nil
+    begin
+      ip = IP::Address.new("255.255.255.")
+    rescue IP::AddressException => e
+      assert(true, "init test #6")
+    end
+
+    assert(false, "init test #6") if ip
+
   end
   
   def test_accessor

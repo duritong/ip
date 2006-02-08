@@ -1,6 +1,6 @@
 spec = Gem::Specification.new
 spec.name = "ip"
-spec.version = "0.1.0"
+spec.version = "0.1.1"
 spec.author = "Erik Hollensbe"
 spec.email = "erik@hollensbe.org"
 spec.summary = "Ruby classes to work with IP address, ranges, and netmasks"

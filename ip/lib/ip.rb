@@ -267,7 +267,24 @@ class IP
         raise IP::AddressException.new("Fed IP address is not String")
       end
       @ip_address = ip_address
-      @octets = ip_address.split(/\./).collect { |x| x.to_i }
+      
+      #
+      # Unbeknowest by me, to_i will not throw an exception if the string
+      # can't be converted cleanly - it just truncates, similar to atoi() and perl's int().
+      #
+      # Code below does a final sanity check.
+      #
+
+      octets = ip_address.split(/\./)
+      octets_i = octets.collect { |x| x.to_i }
+      
+      0.upto(octets.length - 1) do |octet|
+        if octets[octet] != octets_i[octet].to_s
+          raise IP::AddressException.new("Integer conversion failed")
+        end
+      end
+
+      @octets = octets_i
 
       # I made a design decision to allow 0.0.0.0 here.
       if @octets.length != 4 or @octets.find_all { |x| x > 255 }.length > 0
