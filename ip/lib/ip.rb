@@ -5,6 +5,7 @@
 # Author:: Erik Hollensbe
 # License:: BSD
 # Contact:: erik@hollensbe.org
+# Copyright:: Copyright (c) 2005-2006 Erik Hollensbe
 #
 # IP is, as mentioned above, a collection of tools to work
 # with IP addresses. There are three major classes included
@@ -30,7 +31,7 @@
 # methods that made code easier to understand and/or clearer, and
 # making plenty of suggestions made creating this module much easier.
 #
-# ================================================================
+#--
 #
 # The compilation of software known as ip.rb is distributed under the
 # following terms:
@@ -54,6 +55,7 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
+#++
 
 class IP
 
