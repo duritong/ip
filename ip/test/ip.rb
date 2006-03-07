@@ -90,7 +90,7 @@ class CIDRTest < Test::Unit::TestCase
     assert(cidr.short_netmask == 32, "netmask test #1")
     assert(cidr.long_netmask.ip_address == "255.255.255.255", "netmask test #2")
     
-    cidr = IP::CIDR.new("10.0.0.1/255.255.255.241")
+    cidr = IP::CIDR.new("10.0.0.1/255.255.255.248")
     assert(cidr.short_netmask == 29, "netmask test #3")
     assert(cidr.long_netmask.ip_address == "255.255.255.248", "netmask test #4")
   end
@@ -254,28 +254,8 @@ class UtilTest < Test::Unit::TestCase
   def test_short_netmask
     ip = IP::Address::IPv4.new("255.255.255.255")
     assert(IP::Address::Util.short_netmask(ip) == 32, "Short Netmask Test #1")
-    ip = IP::Address::IPv4.new("255.255.255.241")
+    ip = IP::Address::IPv4.new("255.255.255.248")
     assert(IP::Address::Util.short_netmask(ip) == 29, "Short Netmask Test #2")
-    
-    nm = nil
-
-    begin
-      nm = IP::Address::Util.short_netmask(IP::Address::IPv4.new("255.255.0.255"))
-    rescue IP::BoundaryException => e
-      assert(true, "Short Netmask BoundaryException Check #1")
-    end
-
-    assert(false, "Short Netmask BoundaryException Check #1") if nm
-    
-    nm = nil
-
-    begin
-      nm = IP::Address::Util.short_netmask(IP::Address::IPv4.new("255.255.240.255"))
-    rescue IP::BoundaryException => e
-      assert(true, "Short Netmask BoundaryException check #2")
-    end
-    
-    assert(false, "Short Netmask BoundaryException check #2") if nm
   end
 
   def test_long_netmask

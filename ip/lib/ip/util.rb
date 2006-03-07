@@ -88,7 +88,17 @@ module IP::Address::Util
     #
  
     s = ip.pack.to_s(2)
-    s = ("0" * (128 - s.length)) + s
+
+    pad = 0
+
+    case ip.class.object_id
+    when IP::Address::IPv6.object_id
+      pad = 128
+    when IP::Address::IPv4.object_id
+      pad = 32
+    end
+
+    s = ("0" * (pad - s.length)) + s
 
     return s.rindex("1") + 1
   end
