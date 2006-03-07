@@ -117,11 +117,25 @@ class IP::Address::IPv4 < IP::Address
     
     (0..3).step(2) { |x| packval.push(((myip[x] & 0xFF) << 8) | (myip[x+1] & 0xFF)) }
     
-    return raw_pack(packval)
+    return IP::Address::Util.raw_pack(packval)
   end
 end
 
 class IP::Address::IPv6 < IP::Address
+
+  #
+  # Construct a new IP::Address::IPv6 object.
+  #
+  # It can be passed two different types for construction:
+  #
+  # * A string which contains a valid,  RFC4291-compliant IPv6 address
+  #     (all forms are supported, including the
+  #     backwards-compatibility IPv4 methods) 
+  #
+  # * A 128-bit integer which is a sum of all the octets, left-most
+  #   octet being the highest 32-bit portion (see IP::Address::Util
+  #   for help generating this value)
+  #
 
   def initialize(ip_address)
     if ip_address.kind_of? Integer
@@ -131,7 +145,7 @@ class IP::Address::IPv6 < IP::Address
       
       raw = IP::Address::Util.raw_unpack(ip_address)
       
-      ip_address = octets.reverse.collect { |x| "%X" % x }.join(":")
+      ip_address = format_address(raw.reverse)
     end
     
     if ! ip_address.kind_of? String
@@ -153,8 +167,6 @@ class IP::Address::IPv6 < IP::Address
     #
     # There can only be one '::' in an address, so if we are filling
     # the RHS and encounter another '::', we throw AddressException.
-    #
-    # TODO: parse IPv4 dotted-quad compatibility addresses.
     #
 
     octets = ip_address.split(":")
@@ -202,7 +214,7 @@ class IP::Address::IPv6 < IP::Address
         raw = IP::Address::IPv4.new(octets[-1]).pack
         low = raw & 0xFFFF
         high = raw >> 4
-        octets = ([0] * 6) + [high, low]
+        octets = format_address(([0] * 6) + [high, low])
       end
 
     elsif octets.length > 8
@@ -228,9 +240,9 @@ class IP::Address::IPv6 < IP::Address
       octet = x.hex
 
       # normalize the octet to 4 places with leading zeroes, uppercase.
-      x = ("0" * (4 - x.length)) + x.upcase unless octet == 0
+      x = ("0" * (4 - x.length)) + x.upcase 
 
-      unless ("%X" % octet) == x
+      unless ("%0.4X" % octet) == x
         raise IP::AddressException.new("IPv6 address '#{ip_address}' has octets that contain non-hexidecimal data")
       end
 
@@ -248,7 +260,7 @@ class IP::Address::IPv6 < IP::Address
   #
   
   def long_address
-    return @octets.collect { |x| "%X" % x }.join(":")
+    return format_address
   end
 
   #
@@ -265,7 +277,37 @@ class IP::Address::IPv6 < IP::Address
   # "DEAD:0:0:0:BEEF:0:0:0" => "DEAD:0:0:0:BEEF::"
 
   def short_address
-    return long_address.reverse.sub(/(0:)+/, "::").reverse
+    octets = @octets.dup
+
+    # short circuit: if less than 2 octets are equal to 0, don't
+    # bother - return a long address.
+    
+    if octets.find_all { |x| x == 0 }.length < 2
+      return format_address(octets)
+    end
+
+    filling = false
+    
+    left  = []
+    right = []
+
+    7.downto(0) do |x|
+      if !filling and left.length == 0 and octets[x] == 0
+        filling = true
+      elsif filling
+        if octets[x] != 0
+          left.push(octets[x])
+          filling = false
+        end
+      elsif left.length > 0
+        left.push(octets[x])
+      else
+        right.push(octets[x])
+      end
+    end
+    
+    return format_address(left.reverse) + "::" + format_address(right.reverse)
+    
   end
   
   #
@@ -273,6 +315,31 @@ class IP::Address::IPv6 < IP::Address
   #
   def pack
     return IP::Address::Util.raw_pack(self.octets.dup)
+  end
+
+  protected
+
+  #
+  # Formats the integer octets in ruby into their respective hex values.
+  #
+
+  def format_octet(octet)
+    # this isn't required by the spec, but makes the output quite a bit
+    # prettier.
+    if octet < 10
+      return octet.to_s
+    end
+
+    return "%0.4X" % octet
+  end
+
+  #
+  # The same as +format_octet+, but processes an array (intended to be
+  # a whole address).
+  #
+
+  def format_address(octets=@octets)
+    return octets.collect { |x| format_octet(x) }.join(":")
   end
 
 end

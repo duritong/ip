@@ -13,32 +13,36 @@
 # cannot be parsed.
 #
 
-class Range
+class IP::Range
   
   #
   # See the documentation for IP::Range for more information on this
   # method.
   #
   
-  def Range.[](addr1, addr2)
+  def self.[](addr1, addr2)
     raw1, raw2 = [nil, nil]
+    tmpip = nil
     
     if addr1.kind_of? String
-      raw1 = IP::Address::Util.pack(IP::Address.new(addr1))
-    elsif addr1.kind_of? IP::Address
-      raw1 = IP::Address::Util.pack(addr1)
-    else
+      addr1 = IP::Address::Util.string_to_ip(addr1)
+    elsif ! addr1.kind_of? IP::Address
       raise IP::AddressException("IP Address is not type String or IP::Address")
     end
     
     if addr2.kind_of? String
-      raw2 = IP::Address::Util.pack(IP::Address.new(addr2))
-    elsif addr2.kind_of? IP::Address
-      raw2 = IP::Address::Util.pack(addr2)
-    else
+      addr2 = IP::Address::Util.string_to_ip(addr2)
+    elsif ! addr2.kind_of? IP::Address
       raise IP::AddressException("IP Address is not type String or IP::Address")
     end
+
+    if addr2.class.name != addr1.class.name
+      raise IP::AddressException.new("First and Second IP in range are not of the same type")
+    end
     
+    raw1 = addr1.pack
+    raw2 = addr2.pack
+
     range = []
     
     (raw1..raw2).each { |x| range.push(IP::Address::Util.unpack(x)) }

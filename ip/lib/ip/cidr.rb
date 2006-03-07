@@ -30,21 +30,23 @@ class IP::CIDR
     
     @cidr = cidr
     @ip, @mask = cidr.split(/\//, 2)
-    
+
+    @ip = IP::Address::Util.string_to_ip(@ip)
+
     if @ip.nil? or @mask.nil?
       raise IP::AddressException.new("CIDR is not valid - invalid format")
     end
     
-    if @mask.length == 0 or /[^0-9.]/.match @mask
+    if @mask.length == 0 or /[^0-9.]/.match @mask or 
+        (@ip.kind_of? IP::Address::IPv6 and @mask.to_i.to_s != @mask)
       raise IP::AddressException.new("CIDR RHS is not valid - #{@mask}")
     end
-    
-    if @mask.length > 2
-      # this will throw an exception if the netmask is malformed.
-      @mask = IP::Address::Util.short_netmask(IP::Address.new(@mask))
+
+    if @ip.kind_of? IP::Address::IPv4 and @mask.length > 2
+      # get the short netmask for IPv4 - this will throw an exception if the netmask is malformed.
+      @mask = IP::Address::Util.short_netmask(IP::Address::IPv4.new(@mask))
     end
     
-    @ip = IP::Address.new(@ip)
     @mask = @mask.to_i
   end
   
@@ -57,8 +59,14 @@ class IP::CIDR
   # This produces the long netmask (eg. 255.255.255.255) of the CIDR in an
   # IP::Address object.
   #
+  # This will throw an exception for IPv6 addresses.
+  #
   def long_netmask
-    return IP::Address::Util.long_netmask(@mask)
+    if @ip.kind_of? IP::Address::IPv6
+      raise IP::AddressException.new("IPv6 does not support a long netmask.")
+    end
+    
+    return IP::Address::Util.long_netmask_ipv4(@mask)
   end
   
   #
@@ -82,9 +90,26 @@ class IP::CIDR
   # This returns the first ip address of the cidr as an IP::Address object.
   #
   def first_ip
-    rawip = IP::Address::Util.pack(@ip)
-    rawnm = 0xFFFFFFFF << (32 - @mask)
+    rawip = @ip.pack 
+    
+    #
+    # since our actual mask calculation is done with the full 128 bits,
+    # we have to shift calculations that we want in IPv4 to the left to
+    # get proper return values.
+    # 
+
+    if @ip.kind_of? IP::Address::IPv4
+      rawip = rawip << 96
+    end
+
+    rawnm = (0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) << (128 - @mask)
     lower = rawip & rawnm
+    
+    if @ip.kind_of? IP::Address::IPv4
+      lower = lower & (0xFFFFFFFF000000000000000000000000)
+      lower = lower >> 96
+    end
+
     return IP::Address::Util.unpack(lower)
   end
   
@@ -92,9 +117,21 @@ class IP::CIDR
   # This returns the last ip address of the cidr as an IP::Address object.
   #
   def last_ip
-    rawip = IP::Address::Util.pack(@ip)
-    rawnm = 0xFFFFFFFF << (32 - @mask)
+    rawip = @ip.pack
+    
+    # see #first_ip for the reason that we shift this way for IPv4.
+    if @ip.kind_of? IP::Address::IPv4
+      rawip = rawip << 96
+    end
+
+    rawnm = (0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) << (128 - @mask)
     upper = rawip | ~rawnm
+
+    if @ip.kind_of? IP::Address::IPv4
+      upper = upper & (0xFFFFFFFF000000000000000000000000)
+      upper = upper >> 96
+    end
+
     return IP::Address::Util.unpack(upper)
   end
   
@@ -107,11 +144,11 @@ class IP::CIDR
   def overlaps?(other_cidr)
     raise TypeError.new("Expected object of type IP::CIDR") unless(other_cidr.kind_of?(IP::CIDR))
     
-    myfirst = IP::Address::Util.pack(self.first_ip)
-    mylast = IP::Address::Util.pack(self.last_ip)
+    myfirst = self.first_ip.pack
+    mylast = self.last_ip.pack
     
-    otherfirst = IP::Address::Util.pack(other_cidr.first_ip)
-    otherlast = IP::Address::Util.pack(other_cidr.last_ip)
+    otherfirst = other_cidr.first_ip.pack
+    otherlast = other_cidr.last_ip.pack
     
     return ((myfirst >= otherfirst && myfirst <= otherlast) ||
               (mylast <= otherlast && mylast >= otherfirst) ||

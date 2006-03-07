@@ -137,7 +137,7 @@ class RangeTest < Test::Unit::TestCase
     assert(a, "data types test #1")
     
     begin
-      IP::Range[IP::Address.new("10.0.0.1"), IP::Address.new("10.0.0.2")]
+      IP::Range[IP::Address::IPv4.new("10.0.0.1"), IP::Address::IPv4.new("10.0.0.2")]
       a = true
     rescue Exception => e
       a = false
@@ -156,15 +156,15 @@ class RangeTest < Test::Unit::TestCase
 
 end
 
-class AddressTest < Test::Unit::TestCase
+class IPv4AddressTest < Test::Unit::TestCase
   def name
-    return "IP::Address tests"
+    return "IP::Address::IPv4 tests"
   end
 
   def test_init
     ip = nil
     begin
-      ip = IP::Address.new(Hash.new)
+      ip = IP::Address::IPv4.new(Hash.new)
     rescue IP::AddressException => e
       assert(true, "init test #1")
     end
@@ -174,7 +174,7 @@ class AddressTest < Test::Unit::TestCase
     ip = nil
 
     begin
-      ip = IP::Address.new("asdf")
+      ip = IP::Address::IPv4.new("asdf")
     rescue IP::AddressException => e
       assert(true, "init test #2")
     end
@@ -183,7 +183,7 @@ class AddressTest < Test::Unit::TestCase
     ip = nil
 
     begin
-      ip = IP::Address.new("0.0.0")
+      ip = IP::Address::IPv4.new("0.0.0")
     rescue IP::AddressException => e
       assert(true, "init test #3")
     end
@@ -192,7 +192,7 @@ class AddressTest < Test::Unit::TestCase
     ip = nil
     
     begin
-      ip = IP::Address.new("256.255.255.255")
+      ip = IP::Address::IPv4.new("256.255.255.255")
     rescue IP::AddressException => e
       assert(true, "init test #4")
     end
@@ -201,7 +201,7 @@ class AddressTest < Test::Unit::TestCase
 
     ip = nil
     begin
-      ip = IP::Address.new("255.255.255.255aaaa")
+      ip = IP::Address::IPv4.new("255.255.255.255aaaa")
     rescue IP::AddressException => e
       assert(true, "init test #5")
     end
@@ -210,7 +210,7 @@ class AddressTest < Test::Unit::TestCase
 
     ip = nil
     begin
-      ip = IP::Address.new("255.255.255.")
+      ip = IP::Address::IPv4.new("255.255.255.")
     rescue IP::AddressException => e
       assert(true, "init test #6")
     end
@@ -220,7 +220,7 @@ class AddressTest < Test::Unit::TestCase
   end
   
   def test_accessor
-    ip = IP::Address.new("10.1.2.3")
+    ip = IP::Address::IPv4.new("10.1.2.3")
     assert(ip.ip_address == "10.1.2.3", "accessor test #1")
     assert(ip.octets[0] == 10, "accessor test #2")
     assert(ip.octets[3] == 3, "accessor test #3")
@@ -248,19 +248,19 @@ class UtilTest < Test::Unit::TestCase
   
   def test_pack_unpack
     address = "10.0.0.1"
-    assert(IP::Address::Util.unpack(IP::Address::Util.pack(IP::Address.new(address))).ip_address == address, "pack/unpack test")
+    assert(IP::Address::Util.unpack(IP::Address::Util.pack(IP::Address::IPv4.new(address))).ip_address == address, "pack/unpack test")
   end
   
   def test_short_netmask
-    ip = IP::Address.new("255.255.255.255")
+    ip = IP::Address::IPv4.new("255.255.255.255")
     assert(IP::Address::Util.short_netmask(ip) == 32, "Short Netmask Test #1")
-    ip = IP::Address.new("255.255.255.241")
+    ip = IP::Address::IPv4.new("255.255.255.241")
     assert(IP::Address::Util.short_netmask(ip) == 29, "Short Netmask Test #2")
     
     nm = nil
 
     begin
-      nm = IP::Address::Util.short_netmask(IP::Address.new("255.255.0.255"))
+      nm = IP::Address::Util.short_netmask(IP::Address::IPv4.new("255.255.0.255"))
     rescue IP::BoundaryException => e
       assert(true, "Short Netmask BoundaryException Check #1")
     end
@@ -270,7 +270,7 @@ class UtilTest < Test::Unit::TestCase
     nm = nil
 
     begin
-      nm = IP::Address::Util.short_netmask(IP::Address.new("255.255.240.255"))
+      nm = IP::Address::Util.short_netmask(IP::Address::IPv4.new("255.255.240.255"))
     rescue IP::BoundaryException => e
       assert(true, "Short Netmask BoundaryException check #2")
     end
@@ -279,15 +279,8 @@ class UtilTest < Test::Unit::TestCase
   end
 
   def test_long_netmask
-    assert(IP::Address::Util.long_netmask(32).ip_address == "255.255.255.255", "Long Netmask Test #1")
-    assert(IP::Address::Util.long_netmask(29).ip_address == "255.255.255.248", "Long Netmask Test #2")
-  end
-
-  def test_binary_vector
-    assert(IP::Address::Util.binary_vector(255).length == 8, "Binary Vector Test #1")
-    assert(IP::Address::Util.binary_vector(240).find_all { |x| x == 1 }.length == 4, "Binary Vector Test #2")
-    assert(IP::Address::Util.binary_vector(241).find_all { |x| x == 1 }.length == 5, "Binary Vector Test #3")
-    assert(IP::Address::Util.binary_vector(240)[0] == 1, "Binary Vector Test #4")
+    assert(IP::Address::Util.long_netmask_ipv4(32).ip_address == "255.255.255.255", "Long Netmask Test #1")
+    assert(IP::Address::Util.long_netmask_ipv4(29).ip_address == "255.255.255.248", "Long Netmask Test #2")
   end
 
 end

@@ -118,4 +118,24 @@ module IP::Address::Util
   
   module_function :long_netmask_ipv4
   
+  #
+  # This takes a string which supposedly contains an IP address, and
+  # tries to figure out if it is a IPv6 or IPv4 address. Returns a
+  # constructed object of the proper type.
+  #
+
+  def string_to_ip(s)
+    begin
+      return IP::Address::IPv6.new(s)
+    rescue IP::AddressException => e
+      begin
+        return IP::Address::IPv4.new(s)
+      rescue IP::AddressException => e
+        raise IP::AddressException.new("Could not determine address format while trying to calculate range")
+      end
+    end
+  end
+
+  module_function :string_to_ip
+
 end
