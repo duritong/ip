@@ -27,13 +27,13 @@ class IP::Range
     if addr1.kind_of? String
       addr1 = IP::Address::Util.string_to_ip(addr1)
     elsif ! addr1.kind_of? IP::Address
-      raise IP::AddressException("IP Address is not type String or IP::Address")
+      raise IP::AddressException.new("IP Address is not type String or IP::Address")
     end
     
     if addr2.kind_of? String
       addr2 = IP::Address::Util.string_to_ip(addr2)
     elsif ! addr2.kind_of? IP::Address
-      raise IP::AddressException("IP Address is not type String or IP::Address")
+      raise IP::AddressException.new("IP Address is not type String or IP::Address")
     end
 
     if addr2.class.name != addr1.class.name
