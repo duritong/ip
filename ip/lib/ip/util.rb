@@ -135,15 +135,8 @@ module IP::Address::Util
   #
 
   def string_to_ip(s)
-    begin
-      return IP::Address::IPv6.new(s)
-    rescue IP::AddressException => e
-      begin
-        return IP::Address::IPv4.new(s)
-      rescue IP::AddressException => e
-        raise IP::AddressException.new("Could not determine address format while trying to calculate range")
-      end
-    end
+    return IP::Address::IPv6.new(s) if s.match(/:/)
+    return IP::Address::IPv4.new(s)
   end
 
   module_function :string_to_ip

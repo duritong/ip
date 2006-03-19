@@ -45,8 +45,10 @@ class IP::Range
 
     range = []
     
-    (raw1..raw2).each { |x| range.push(IP::Address::Util.unpack(x)) }
-    
+    # use the class we were given to force certain results, instead
+    # of relying on the fairly inaccurate unpack facility.
+    range = (raw1..raw2).collect { |x| addr1.class.new(x) }
+
     return range
   end
 end

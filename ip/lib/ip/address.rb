@@ -154,74 +154,11 @@ class IP::Address::IPv6 < IP::Address
     
     @ip_address = ip_address
 
-    #
-    # since IPv6 can have missing parts, we have to scan sequentially.
-    # fill the LHS until we encounter '::', at which point we fill the
-    # RHS.
-    #
-    # If the LHS is 8 octets, we're done. Otherwise, we take a
-    # difference of 8 and the sum of the number of octets from the LHS
-    # from the number of octets from the RHS. We then fill abs(num) at
-    # the end of the LHS array with 0, and combine them to form the
-    # address.
-    #
-    # There can only be one '::' in an address, so if we are filling
-    # the RHS and encounter another '::', we throw AddressException.
-    #
+    octets = parse_address(ip_address)
 
-    octets = ip_address.split(":")
-
-    if octets.length < 8
-      
-      if octets[-1].index(".").nil?
-        
-        lhs = []
-        rhs = []
-        
-        i = octets.index("") # find ::
-        
-        # easy out for xxxx:xxxx:: and so on
-        if i.nil?
-          lhs = octets.dup
-        elsif i == 0
-          # catches ::XXXX::
-          if ip_address.rindex("::") != 0
-            raise IP::AddressException.new("IPv6 address '#{ip_address}' has more than one floating range ('::') specifier")
-          end
-            
-          # for some reason "::123:123".split(":") returns two empty
-          # strings in the array, yet a trailing "::" doesn't.
-          rhs = octets[2..-1]
-        else
-          lhs = octets[0..(i-1)]
-          rhs = octets[(i+1)..-1]
-        end
-        
-        unless rhs.index("").nil?
-          raise IP::AddressException.new("IPv6 address '#{ip_address}' has more than one floating range ('::') specifier")
-        end
-        
-        missing = (8 - (lhs.length + rhs.length))
-        missing.times { lhs.push("0") }
-        
-        octets = lhs + rhs
-        
-      else
-        # we have a dotted quad IPv4 compatibility address.
-        # create an IPv4 object, get the raw value and stuff it into
-        # the lower two octets. discard everything else.
-        
-        raw = IP::Address::IPv4.new(octets[-1]).pack
-        low = raw & 0xFFFF
-        high = raw >> 4
-        octets = format_address(([0] * 6) + [high, low])
-      end
-
-    elsif octets.length > 8
-      raise IP::AddressException.new("IPv6 address '#{ip_address}' has more than 8 octets")
-    end
 
     if octets.length != 8
+      puts octets
       raise IP::AddressException.new("IPv6 address '#{ip_address}' does not have 8 octets or a floating range specifier")
     end
 
@@ -230,25 +167,15 @@ class IP::Address::IPv6 < IP::Address
     # proper hexidecimal values
     #
     
-    @octets = []
+    @octets = octets_atoi(octets)
+  end
+  
+  #
+  # returns an octet in its hexidecimal representation.
+  #
 
-    octets.each do |x|
-      if x.length > 4
-        raise IP::AddressException.new("IPv6 address '#{ip_address}' has an octet that is larger than 32 bits")
-      end
-
-      octet = x.hex
-
-      # normalize the octet to 4 places with leading zeroes, uppercase.
-      x = ("0" * (4 - x.length)) + x.upcase 
-
-      unless ("%0.4X" % octet) == x
-        raise IP::AddressException.new("IPv6 address '#{ip_address}' has octets that contain non-hexidecimal data")
-      end
-
-      @octets.push(octet)
-    end
-    
+  def octet_as_hex(index)
+    return format_octet(self[index])
   end
 
   #
@@ -318,6 +245,126 @@ class IP::Address::IPv6 < IP::Address
   end
 
   protected
+
+  #
+  # will parse a string address and return an 8 index array containing
+  # all the octets. Should handle IPv4 to IPv6 and wildcards properly.
+  #
+
+  def parse_address(address)
+
+    #
+    # since IPv6 can have missing parts, we have to scan sequentially.
+    # fill the LHS until we encounter '::', at which point we fill the
+    # RHS.
+    #
+    # If the LHS is 8 octets, we're done. Otherwise, we take a
+    # difference of 8 and the sum of the number of octets from the LHS
+    # from the number of octets from the RHS. We then fill abs(num) at
+    # the end of the LHS array with 0, and combine them to form the
+    # address.
+    #
+    # There can only be one '::' in an address, so if we are filling
+    # the RHS and encounter another '::', we throw AddressException.
+    #
+
+    # catches ::XXXX::
+    if address.scan(/::/).length > 1
+      raise IP::AddressException.new("IPv6 address '#{ip_address}' has more than one floating range ('::') specifier")
+    end
+
+    octets = address.split(":")
+
+    if octets.length < 8
+      
+      if octets[-1].index(".").nil?
+        octets = handle_wildcard_in_address(octets)
+      else
+        # we have a dotted quad IPv4 compatibility address.
+        # create an IPv4 object, get the raw value and stuff it into
+        # the lower two octets.
+        
+        raw = IP::Address::IPv4.new(octets.pop).pack
+        raw = raw & 0xFFFFFFFF
+        low = raw & 0xFFFF
+        high = (raw >> 16) & 0xFFFF
+        octets = handle_wildcard_in_address(octets)[0..5] + ([high, low].collect { |x| format_octet(x) })
+      end
+      
+    elsif octets.length > 8
+      raise IP::AddressException.new("IPv6 address '#{ip_address}' has more than 8 octets")
+    end
+    
+    return octets
+  end
+  
+
+  #
+  # This handles :: addressing in IPv6 and generates a full set of
+  # octets in response.
+  # 
+  # The series of octets handed to this routine are expected to be the
+  # result of splitting the address by ':'.
+  #
+
+  def handle_wildcard_in_address(octets)
+    lhs = []
+    rhs = []
+    
+    i = octets.index("") # find ::
+    
+    # easy out for xxxx:xxxx:: and so on
+    if i.nil?
+      lhs = octets.dup
+    elsif i == 0
+      # for some reason "::123:123".split(":") returns two empty
+      # strings in the array, yet a trailing "::" doesn't.
+      rhs = octets[2..-1]
+    else
+      lhs = octets[0..(i-1)]
+      rhs = octets[(i+1)..-1]
+    end
+    
+    unless rhs.index("").nil?
+      raise IP::AddressException.new("IPv6 address '#{ip_address}' has more than one floating range ('::') specifier")
+    end
+    
+    missing = (8 - (lhs.length + rhs.length))
+    missing.times { lhs.push("0") }
+    
+    octets = lhs + rhs
+
+    return octets
+  end
+
+  #
+  # Converts (and checks) a series of octets from ascii to integer.
+  #
+
+  def octets_atoi(octets)
+    new_octets = []
+    
+    octets.each do |x|
+      if x.length > 4
+        raise IP::AddressException.new("IPv6 address '#{ip_address}' has an octet that is larger than 32 bits")
+      end
+
+      octet = x.hex
+
+      # normalize the octet to 4 places with leading zeroes, uppercase.
+      x = ("0" * (4 - x.length)) + x.upcase 
+
+      unless ("%0.4X" % octet) == x
+        raise IP::AddressException.new("IPv6 address '#{ip_address}' has octets that contain non-hexidecimal data")
+      end
+
+      new_octets.push(octet)
+    end
+    
+    return new_octets
+
+  end
+
 
   #
   # Formats the integer octets in ruby into their respective hex values.
