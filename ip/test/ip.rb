@@ -17,7 +17,7 @@ class CIDRTest < Test::Unit::TestCase
       a = true
     end
 
-    assert(a, "data types test #1")
+    assert(a, "only accepts string")
 
     begin
       IP::CIDR.new("foomatic_wootmaster/32")
@@ -26,7 +26,7 @@ class CIDRTest < Test::Unit::TestCase
       a = true
     end
     
-    assert(a, "data types test #2")
+    assert(a, "ensures we have a IP address")
   end
 
   def test_init_ipv6
@@ -39,7 +39,7 @@ class CIDRTest < Test::Unit::TestCase
       a = true
     end
 
-    assert(a, "ipv6 data validation test #1")
+    assert(a, "no subnet")
 
     begin
       IP::CIDR.new("F00F:DEAD:BEEF::/")
@@ -48,7 +48,7 @@ class CIDRTest < Test::Unit::TestCase
       a = true
     end
 
-    assert(a, "ipv6 data validation test #2")
+    assert(a, "subnet marker, no integer")
     
     begin
       IP::CIDR.new("F00F:DEAD:BEEF::/asdf/32")
@@ -57,7 +57,7 @@ class CIDRTest < Test::Unit::TestCase
       a = true
     end
 
-    assert(a, "ipv6 data validation test #3")
+    assert(a, "'two' subnets")
   
     begin
       IP::CIDR.new("F00F:DEAD:BEEF::/foomatic_wootmaster")
@@ -66,16 +66,7 @@ class CIDRTest < Test::Unit::TestCase
       a = true
     end
 
-    assert(a, "ipv6 data validation test #4")
-
-    begin
-      IP::CIDR.new("F00F:DEAD:BEEF::/foomatic_wootmaster")
-      a = false
-    rescue IP::AddressException => e
-      a = true
-    end
-
-    assert(a, "ipv6 data validation test #5")
+    assert(a, "junk subnet")
 
     begin
       IP::CIDR.new("F00F:DEAD:BEEF::/255.255.255.255")
@@ -84,14 +75,14 @@ class CIDRTest < Test::Unit::TestCase
       a = true
     end
 
-    assert(a, "ipv6 data validation test #6")
+    assert(a, "ipv4 long subnet on ipv6")
 
     cidr = IP::CIDR.new("F00F:DEAD:BEEF::0001/128")
 
     # this sort of indirectly tests the ipv6 address manipulation.
-    assert(cidr.ip.short_address == "F00F:DEAD:BEEF::1", "ipv6 data integrity test #1")
-    assert(cidr.mask == 128, "ipv6 data integrity test #2")
-    assert(cidr.cidr == "F00F:DEAD:BEEF::0001/128", "ipv6 data integrity test #3")
+    assert(cidr.ip.short_address == "F00F:DEAD:BEEF::1", "ipv6 object constructed clean")
+    assert(cidr.mask == 128, "mask is set properly")
+    assert(cidr.cidr == "F00F:DEAD:BEEF::0001/128", "original CIDR preserved")
   end
 
   def test_init_ipv4
@@ -156,13 +147,27 @@ class CIDRTest < Test::Unit::TestCase
   end
 
   def test_netmasks
+    a = nil
+    
     cidr = IP::CIDR.new("10.0.0.1/32")
     assert(cidr.short_netmask == 32, "ipv4 netmask test #1")
     assert(cidr.long_netmask.ip_address == "255.255.255.255", "ipv4 netmask test #2")
-    
+
     cidr = IP::CIDR.new("10.0.0.1/255.255.255.248")
     assert(cidr.short_netmask == 29, "ipv4 netmask test #3")
     assert(cidr.long_netmask.ip_address == "255.255.255.248", "ipv4 netmask test #4")
+
+    cidr = IP::CIDR.new("F00F:DEAD::/16")
+    assert(cidr.short_netmask == 16, "ipv6 has proper short netmask")
+
+    begin
+      cidr.long_netmask
+      a = false
+    rescue IP::AddressException => e
+      a = true
+    end
+
+    assert(a, "ipv6 cannot use a long netmask")
   end
 
   def test_first_last
@@ -175,6 +180,10 @@ class CIDRTest < Test::Unit::TestCase
     cidr = IP::CIDR.new("10.0.0.2/24")
     assert(cidr.range.find_all { |x| x.ip_address == "10.0.0.1" }.length == 1, "ipv4 range test #1")
     assert(cidr.range.find_all { |x| x.ip_address == "10.0.1.0" }.length == 0, "ipv4 range test #2")
+
+    cidr = IP::CIDR.new("::0001/120")
+    assert(cidr.range.find_all { |x| x.ip_address == "0:0:0:0:0:0:0:00FF" }.length == 1, "ipv6 range test (included)")
+    assert(cidr.range.find_all { |x| x.ip_address ==" 0:0:0:0:0:0:0:0F00"    }.length == 0, "ipv6 range test (not included)")
   end
 
   def test_overlaps
@@ -187,7 +196,29 @@ class CIDRTest < Test::Unit::TestCase
 
     assert(cidr2.overlaps?(cidr), "ipv4 overlaps test #2")
     assert(cidr.overlaps?(cidr2), "ipv4 overlaps test #3")
+
+    cidr  = IP::CIDR.new("F00F:DEAD::/16")
+    cidr2 = IP::CIDR.new("F00F:BEEF::/16")
+
+    assert(cidr.overlaps?(cidr2), "ipv6 #overlaps? reports correctly #1")
+    assert(cidr2.overlaps?(cidr), "ipv6 #overlaps? reports correctly #2")
   end
+  
+  def test_includes
+    cidr = IP::CIDR.new("10.0.0.2/24")
+    ip = IP::Address::IPv4.new("10.0.0.1")
+
+    assert(cidr.includes?(ip), "ipv4 #includes? reports correctly (included)")
+    ip = IP::Address::IPv4.new("10.0.1.0")
+    assert(!cidr.includes?(ip), "ipv4 #includes? reports correctly (not included)")
+    
+    cidr = IP::CIDR.new("FF00::/16")
+    ip = IP::Address::IPv6.new("FF00::DEAD")
+    assert(cidr.includes?(ip), "ipv6 #includes? reports correctly (included)")
+    ip = IP::Address::IPv6.new("F000::DEAD")
+    assert(!cidr.includes?(ip), "ipv6 #includes? reports correctly (not included)")
+  end
+
 end
 
 class RangeTest < Test::Unit::TestCase
@@ -387,6 +418,15 @@ class IPv6AddressTest < Test::Unit::TestCase
 
     # now, the tests that should fail
     
+    begin
+      IP::Address::IPv6.new("FF00:BEEF:")
+      a = false
+    rescue IP::AddressException => e
+      a = true
+    end
+
+    assert(a, "not enough octets")
+
     begin
       IP::Address::IPv6.new("FF00::BEEF::")
       a = false

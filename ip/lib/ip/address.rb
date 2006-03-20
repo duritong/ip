@@ -156,7 +156,6 @@ class IP::Address::IPv6 < IP::Address
 
     octets = parse_address(ip_address)
 
-
     if octets.length != 8
       puts octets
       raise IP::AddressException.new("IPv6 address '#{ip_address}' does not have 8 octets or a floating range specifier")
@@ -277,9 +276,9 @@ class IP::Address::IPv6 < IP::Address
 
     if octets.length < 8
       
-      if octets[-1].index(".").nil?
+      if octets[-1].index(".").nil? and address.match(/::/)
         octets = handle_wildcard_in_address(octets)
-      else
+      elsif octets[-1].index(".")
         # we have a dotted quad IPv4 compatibility address.
         # create an IPv4 object, get the raw value and stuff it into
         # the lower two octets.
@@ -289,10 +288,12 @@ class IP::Address::IPv6 < IP::Address
         low = raw & 0xFFFF
         high = (raw >> 16) & 0xFFFF
         octets = handle_wildcard_in_address(octets)[0..5] + ([high, low].collect { |x| format_octet(x) })
+      else 
+        raise IP::AddressException.new("IPv6 address '#{address}' has less than 8 octets")
       end
       
     elsif octets.length > 8
-      raise IP::AddressException.new("IPv6 address '#{ip_address}' has more than 8 octets")
+      raise IP::AddressException.new("IPv6 address '#{address}' has more than 8 octets")
     end
     
     return octets

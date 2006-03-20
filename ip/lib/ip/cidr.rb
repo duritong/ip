@@ -104,13 +104,21 @@ class IP::CIDR
 
     rawnm = (0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) << (128 - @mask)
     lower = rawip & rawnm
-    
+
     if @ip.kind_of? IP::Address::IPv4
       lower = lower & (0xFFFFFFFF000000000000000000000000)
       lower = lower >> 96
     end
 
-    return IP::Address::Util.unpack(lower)
+    case @ip.class.object_id
+    when IP::Address::IPv4.object_id
+      return IP::Address::IPv4.new(lower)
+    when IP::Address::IPv6.object_id
+      return IP::Address::IPv6.new(lower)
+    else
+      raise IP::AddressException.new("Cannot determine type of IP address")
+    end
+
   end
   
   #
@@ -132,7 +140,14 @@ class IP::CIDR
       upper = upper >> 96
     end
 
-    return IP::Address::Util.unpack(upper)
+    case @ip.class.object_id
+    when IP::Address::IPv4.object_id
+      return IP::Address::IPv4.new(upper)
+    when IP::Address::IPv6.object_id
+      return IP::Address::IPv6.new(upper)
+    else
+      raise IP::AddressException.new("Cannot determine type of IP address")
+    end
   end
   
   #
@@ -154,5 +169,24 @@ class IP::CIDR
               (mylast <= otherlast && mylast >= otherfirst) ||
               (otherfirst >= myfirst && otherfirst <= mylast)) ? true : false;
   end
-  
+
+  #
+  # Given an IP::Address object, will determine if it is included in
+  # the current subnet. This does not generate a range and is
+  # comparatively much faster.
+  #
+  # This will *not* generate an exception when IPv4 objects are
+  # compared to IPv6, and vice-versa. This is intentional.
+  #
+
+  def includes?(address)
+    raise TypeError.new("Expected type of IP::Address or derived") unless (address.kind_of? IP::Address)
+
+    raw   = address.pack
+    first = first_ip.pack
+    last  = last_ip.pack
+    
+    return (raw >= first) && (raw <= last)
+  end
+
 end
