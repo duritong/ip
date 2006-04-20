@@ -78,10 +78,9 @@ class IP
 
 end
 
-$:.unshift(File.dirname(__FILE__))
+$:.push(File.dirname(__FILE__))
 require 'ip/address'
 require 'ip/cidr'
 require 'ip/range'
 require 'ip/util'
-$:.shift
-
+$:.pop

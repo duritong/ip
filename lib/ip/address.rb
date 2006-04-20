@@ -44,6 +44,13 @@ end
 
 class IP::Address::IPv4 < IP::Address
   #
+  # Parses an IP address and stores it as the current address
+  #
+  def IPv4.parse(ip_address)
+    return IP::Address::IPv4.new(ip_address)
+  end
+
+  #
   # Constructs an IP::Address::IPv4 object.
   #
   # This can take two types of input. Either a string that contains
@@ -153,11 +160,10 @@ class IP::Address::IPv6 < IP::Address
     end
     
     @ip_address = ip_address
-
+    
     octets = parse_address(ip_address)
-
+    
     if octets.length != 8
-      puts octets
       raise IP::AddressException.new("IPv6 address '#{ip_address}' does not have 8 octets or a floating range specifier")
     end
 
@@ -169,6 +175,14 @@ class IP::Address::IPv6 < IP::Address
     @octets = octets_atoi(octets)
   end
   
+  #
+  # parses an ip address and stores it as the current object. 
+  #
+ 
+  def IPv6.parse(ip_address)
+    return IP::Address::IPv6.new(ip_address)
+  end
+
   #
   # returns an octet in its hexidecimal representation.
   #
@@ -242,7 +256,7 @@ class IP::Address::IPv6 < IP::Address
   def pack
     return IP::Address::Util.raw_pack(self.octets.dup)
   end
-
+  
   protected
 
   #
