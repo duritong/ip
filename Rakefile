@@ -57,7 +57,7 @@ spec = Gem::Specification.new do |s|
     s.email = "erik@hollensbe.org"
     s.summary = "Ruby classes to work with IP address, ranges, and netmasks"
     s.has_rdoc = true
-    s.files = Dir['examples/*.rb'] + Dir['lib/*.rb'] + Dir['test/*.rb'] + Dir['lib/ip/*.rb']
+    s.files = Dir['Rakefile'] + Dir['examples/*.rb'] + Dir['lib/*.rb'] + Dir['test/*.rb'] + Dir['lib/ip/*.rb']
     s.rubyforge_project = 'ip-address'
 end
 
