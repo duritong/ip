@@ -59,6 +59,8 @@
 
 class IP
 
+  VERSION = "0.2.2"
+
   #
   # A IP::AddressException is thrown when an IP address cannot be
   # parsed.
