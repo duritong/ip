@@ -1,3 +1,9 @@
+begin
+    require 'rubygems'
+    gem 'test-unit'
+rescue LoadError => e 
+end
+
 require 'test/unit'
 load 'lib/ip.rb'
 
