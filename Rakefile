@@ -67,6 +67,7 @@ end
 Rake::PackageTask.new(spec.name, spec.version) do |p|
     p.need_tar_gz = true
     p.need_zip = true
+    p.package_files.include("./setup.rb")
     p.package_files.include("./Rakefile")
     p.package_files.include("./examples/**/*.rb")
     p.package_files.include("./lib/**/*.rb")
