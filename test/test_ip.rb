@@ -239,6 +239,14 @@ class IPv6AddressTest < Test::Unit::TestCase
     assert_equal("F00F:0:0:0:DEAD:BEEF::", ip.short_address, '#short_address returns a compressed version with wildcard @ right')
   end
 
+  def test_equal
+    assert_equal(IP::Address::IPv6.new("F00F::DEAD:BEEF"),IP::Address::IPv6.new("F00F::DEAD:BEEF"))
+    assert_equal(IP::Address::IPv6.new("F00F::DEAD:BEEF"), "F00F::DEAD:BEEF")
+    assert_equal(IP::Address::IPv6.new("F00F::DEAD:BEEF"), "F00F:0:0:0:0:0:DEAD:BEEF")
+    assert_equal(IP::Address::IPv6.new("F00F::DEAD:BEEF"), 319092603441257831911341651915956928239)
+    assert !(IP::Address::IPv6.new("F00D::DEAD:BEEF") == IP::Address::IPv6.new("F00F::DEAD:BEEF"))
+    assert !(IP::Address::IPv6.new("F00D::DEAD:BEEF") == :someting_else)
+  end
 end
 
 
@@ -295,4 +303,11 @@ class UtilTest < Test::Unit::TestCase
     assert_equal("255.255.255.248", IP::Address::Util.long_netmask_ipv4(29).ip_address, "Long Netmask Test #2")
   end
 
+  def test_equal
+    assert_equal(IP::Address::IPv4.new("255.255.255.255"),IP::Address::IPv4.new("255.255.255.255"))
+    assert_equal(IP::Address::IPv4.new("255.255.255.255"), "255.255.255.255")
+    assert_equal(IP::Address::IPv4.new("255.255.255.255"), 4294967295) # 255.255.255.255
+    assert !(IP::Address::IPv4.new("255.255.255.255") == IP::Address::IPv4.new("255.255.255.254"))
+    assert !(IP::Address::IPv4.new("255.255.255.255") == :something_else)
+  end
 end
