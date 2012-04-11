@@ -126,6 +126,20 @@ class IP::Address::IPv4 < IP::Address
     
     return IP::Address::Util.raw_pack(packval)
   end
+
+  #
+  # An IP Address is equal if the ip address match
+  #
+  def ==(other)
+    case other
+      when String,Integer,Bignum
+        self.ip_address == self.class.new(other).ip_address
+      when self.class
+        self.ip_address == other.ip_address
+      else
+        false
+    end
+  end
 end
 
 class IP::Address::IPv6 < IP::Address
@@ -257,6 +271,20 @@ class IP::Address::IPv6 < IP::Address
     return IP::Address::Util.raw_pack(self.octets.dup)
   end
   
+  #
+  # An IP Address is equal if the ip address match
+  #
+  def ==(other)
+    case other
+      when String,Integer,Bignum
+        self.long_address == self.class.new(other).long_address
+      when self.class
+        self.long_address == other.long_address
+      else
+        false
+    end
+  end
+
   protected
 
   #
