@@ -1,7 +1,7 @@
 #
 # IP - Collection of Tools to work with IP addresses
 #
-# Version:: 0.1.0
+# Version:: 0.3.0
 # Author:: Erik Hollensbe
 # License:: BSD
 # Contact:: erik@hollensbe.org
@@ -59,7 +59,7 @@
 
 class IP
 
-  VERSION = "0.2.2"
+  VERSION = "0.3.0"
 
   #
   # A IP::AddressException is thrown when an IP address cannot be

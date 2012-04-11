@@ -59,6 +59,7 @@ spec = Gem::Specification.new do |s|
     s.has_rdoc = true
     s.files = Dir['Rakefile'] + Dir['examples/*.rb'] + Dir['lib/*.rb'] + Dir['test/*.rb'] + Dir['lib/ip/*.rb']
     s.rubyforge_project = 'ip-address'
+    s.homepage = "http://github.com/erikh/ip"
 end
 
 Rake::GemPackageTask.new(spec) do |s|
