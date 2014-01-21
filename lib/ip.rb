@@ -32,7 +32,7 @@
 # making plenty of suggestions made creating this module much easier.
 
 class IP
-  VERSION = "0.3.0"
+  VERSION = "0.3.1"
 
   #
   # A IP::AddressException is thrown when an IP address cannot be
