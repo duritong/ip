@@ -10,7 +10,7 @@ class IP::Address
   attr_reader :ip_address
   #
   # This returns an Array of Integer which contains the octets of
-  # the IP, in descending order. 
+  # the IP, in descending order.
   #
   attr_reader :octets
 
@@ -24,12 +24,12 @@ class IP::Address
     end
     return @octets[num]
   end
-  
+
   #
   # See [].
   #
   alias_method :octet, :[]
-  
+
   #
   # Returns a 128-bit integer representing the address.
   #
@@ -66,42 +66,42 @@ class IP::Address::IPv4 < IP::Address
       # unpack to generate a string, and parse that.
       # overwrites 'ip_address'
       # horribly inefficient, but general.
-      
+
       raw = IP::Address::Util.raw_unpack(ip_address)[0..1]
       octets = []
-      
+
       2.times do |x|
         octets.push(raw[x] & 0x00FF)
         octets.push((raw[x] & 0xFF00) >> 8)
       end
-      
+
       ip_address = octets.reverse.join(".")
     end
-    
+
     if ! ip_address.kind_of? String
       raise IP::AddressException.new("Fed IP address '#{ip_address}' is not String or Fixnum")
     end
-    
+
     @ip_address = ip_address
-    
+
     #
     # Unbeknowest by me, to_i will not throw an exception if the string
     # can't be converted cleanly - it just truncates, similar to atoi() and perl's int().
     #
     # Code below does a final sanity check.
     #
-    
+
     octets = ip_address.split(/\./)
     octets_i = octets.collect { |x| x.to_i }
-    
+
     0.upto(octets.length - 1) do |octet|
       if octets[octet] != octets_i[octet].to_s
         raise IP::AddressException.new("Integer conversion failed")
       end
     end
-    
+
     @octets = octets_i
-    
+
     # I made a design decision to allow 0.0.0.0 here.
     if @octets.length != 4 or @octets.find_all { |x| x > 255 }.length > 0
       raise IP::AddressException.new("IP address is improperly formed")
@@ -116,14 +116,14 @@ class IP::Address::IPv4 < IP::Address
     # that the IP address is of a certain size and has certain numeric limits.
     myip = self.octets
     packval = [0] * 6
-    
+
     #
     # this ensures that the octets are 8 bit, and combines the octets in order to
     # form two 16-bit integers suitable for pushing into the last places in 'packval'
     #
-    
+
     (0..3).step(2) { |x| packval.push(((myip[x] & 0xFF) << 8) | (myip[x+1] & 0xFF)) }
-    
+
     return IP::Address::Util.raw_pack(packval)
   end
 
@@ -151,7 +151,7 @@ class IP::Address::IPv6 < IP::Address
   #
   # * A string which contains a valid,  RFC4291-compliant IPv6 address
   #     (all forms are supported, including the
-  #     backwards-compatibility IPv4 methods) 
+  #     backwards-compatibility IPv4 methods)
   #
   # * A 128-bit integer which is a sum of all the octets, left-most
   #   octet being the highest 32-bit portion (see IP::Address::Util
@@ -163,20 +163,20 @@ class IP::Address::IPv6 < IP::Address
       # unpack to generate a string, and parse that.
       # overwrites 'ip_address'
       # horribly inefficient, but general.
-      
+
       raw = IP::Address::Util.raw_unpack(ip_address)
-      
+
       ip_address = format_address(raw.reverse)
     end
-    
+
     if ! ip_address.kind_of? String
       raise IP::AddressException.new("Fed IP address '#{ip_address}' is not String or Fixnum")
     end
-    
+
     @ip_address = ip_address
-    
+
     octets = parse_address(ip_address)
-    
+
     if octets.length != 8
       raise IP::AddressException.new("IPv6 address '#{ip_address}' does not have 8 octets or a floating range specifier")
     end
@@ -185,14 +185,14 @@ class IP::Address::IPv6 < IP::Address
     # Now we check the contents of the address, to be sure we have
     # proper hexidecimal values
     #
-    
+
     @octets = octets_atoi(octets)
   end
-  
+
   #
-  # parses an ip address and stores it as the current object. 
+  # parses an ip address and stores it as the current object.
   #
- 
+
   def IPv6.parse(ip_address)
     return IP::Address::IPv6.new(ip_address)
   end
@@ -212,7 +212,7 @@ class IP::Address::IPv6 < IP::Address
   #
   # IP::Address::IPv6.new("DEAD::BEEF").long_address => "DEAD:0:0:0:0:0:0:BEEF"
   #
-  
+
   def long_address
     return format_address
   end
@@ -220,7 +220,7 @@ class IP::Address::IPv6 < IP::Address
   #
   # Returns a shortened address using the :: range specifier.
   #
-  # This will replace any sequential octets that are equal to '0' with '::'. 
+  # This will replace any sequential octets that are equal to '0' with '::'.
   # It does this searching from right to left, looking for a sequence
   # of them. Per specification, only one sequence can be replaced in
   # this fashion. It will return a long address if it can't find
@@ -235,13 +235,13 @@ class IP::Address::IPv6 < IP::Address
 
     # short circuit: if less than 2 octets are equal to 0, don't
     # bother - return a long address.
-    
+
     if octets.find_all { |x| x == 0 }.length < 2
       return format_address(octets)
     end
 
     filling = false
-    
+
     left  = []
     right = []
 
@@ -259,18 +259,18 @@ class IP::Address::IPv6 < IP::Address
         right.push(octets[x])
       end
     end
-    
+
     return format_address(left.reverse) + "::" + format_address(right.reverse)
-    
+
   end
-  
+
   #
   # Returns a 128-bit integer representing the address.
   #
   def pack
     return IP::Address::Util.raw_pack(self.octets.dup)
   end
-  
+
   #
   # An IP Address is equal if the ip address match
   #
@@ -317,35 +317,35 @@ class IP::Address::IPv6 < IP::Address
     octets = address.split(":")
 
     if octets.length < 8
-      
+
       if octets[-1].index(".").nil? and address.match(/::/)
         octets = handle_wildcard_in_address(octets)
       elsif octets[-1].index(".")
         # we have a dotted quad IPv4 compatibility address.
         # create an IPv4 object, get the raw value and stuff it into
         # the lower two octets.
-        
+
         raw = IP::Address::IPv4.new(octets.pop).pack
         raw = raw & 0xFFFFFFFF
         low = raw & 0xFFFF
         high = (raw >> 16) & 0xFFFF
         octets = handle_wildcard_in_address(octets)[0..5] + ([high, low].collect { |x| format_octet(x) })
-      else 
+      else
         raise IP::AddressException.new("IPv6 address '#{address}' has less than 8 octets")
       end
-      
+
     elsif octets.length > 8
       raise IP::AddressException.new("IPv6 address '#{address}' has more than 8 octets")
     end
-    
+
     return octets
   end
-  
+
 
   #
   # This handles :: addressing in IPv6 and generates a full set of
   # octets in response.
-  # 
+  #
   # The series of octets handed to this routine are expected to be the
   # result of splitting the address by ':'.
   #
@@ -353,9 +353,9 @@ class IP::Address::IPv6 < IP::Address
   def handle_wildcard_in_address(octets)
     lhs = []
     rhs = []
-    
+
     i = octets.index("") # find ::
-    
+
     # easy out for xxxx:xxxx:: and so on
     if i.nil?
       lhs = octets.dup
@@ -367,14 +367,14 @@ class IP::Address::IPv6 < IP::Address
       lhs = octets[0..(i-1)]
       rhs = octets[(i+1)..-1]
     end
-    
+
     unless rhs.index("").nil?
       raise IP::AddressException.new("IPv6 address '#{ip_address}' has more than one floating range ('::') specifier")
     end
-    
+
     missing = (8 - (lhs.length + rhs.length))
     missing.times { lhs.push("0") }
-    
+
     octets = lhs + rhs
 
     return octets
@@ -386,7 +386,7 @@ class IP::Address::IPv6 < IP::Address
 
   def octets_atoi(octets)
     new_octets = []
-    
+
     octets.each do |x|
       if x.length > 4
         raise IP::AddressException.new("IPv6 address '#{ip_address}' has an octet that is larger than 32 bits")
@@ -395,7 +395,7 @@ class IP::Address::IPv6 < IP::Address
       octet = x.hex
 
       # normalize the octet to 4 places with leading zeroes, uppercase.
-      x = ("0" * (4 - x.length)) + x.upcase 
+      x = ("0" * (4 - x.length)) + x.upcase
 
       unless ("%0.4X" % octet) == x
         raise IP::AddressException.new("IPv6 address '#{ip_address}' has octets that contain non-hexidecimal data")
@@ -403,7 +403,7 @@ class IP::Address::IPv6 < IP::Address
 
       new_octets.push(octet)
     end
-    
+
     return new_octets
 
   end
