@@ -8,5 +8,5 @@ Gem::Specification.new "ip", IP::VERSION do |s|
   s.files = `git ls-files lib`.split($/)
   s.rubyforge_project = 'ip-address'
   s.homepage = "http://github.com/erikh/ip"
-  s.license = "BSD"
+  s.license = "MIT"
 end
