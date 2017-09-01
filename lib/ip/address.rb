@@ -36,6 +36,14 @@ class IP::Address
   def pack
     fail "This method is abstract."
   end
+
+  def self.directly_comparable_classes
+    @directly_comparable_classes ||= if 1.class == Integer
+      [String, Integer]
+    else
+      [String, Integer, Bignum]
+    end
+  end
 end
 
 #
@@ -132,7 +140,7 @@ class IP::Address::IPv4 < IP::Address
   #
   def ==(other)
     case other
-      when String,Integer,Bignum
+      when *self.class.directly_comparable_classes
         self.ip_address == self.class.new(other).ip_address
       when self.class
         self.ip_address == other.ip_address
@@ -276,7 +284,7 @@ class IP::Address::IPv6 < IP::Address
   #
   def ==(other)
     case other
-      when String,Integer,Bignum
+      when *self.class.directly_comparable_classes
         self.long_address == self.class.new(other).long_address
       when self.class
         self.long_address == other.long_address
